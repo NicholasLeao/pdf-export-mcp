@@ -1,0 +1,26 @@
+{
+  "name": "pdf-export-mcp",
+  "version": "1.0.0",
+  "description": "Simple PDF export MCP server (filesystem-based)",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "pdf-export-mcp": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "pdf",
+    "export"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "puppeteer": "^24.0.0",
+    "uuid": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
