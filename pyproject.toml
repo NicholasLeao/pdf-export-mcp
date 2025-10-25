@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pdf-export-mcp"
+version = "1.0.0"
+description = "Simple PDF export MCP server (filesystem-based)"
+authors = [
+    {name = "Nicholas Leao", email = "nicholas@protex.ai"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+    "pyppeteer>=2.0.0",
+]
+
+[project.scripts]
+pdf-export-mcp = "pdf_export_mcp.server:cli_main"
+
+[project.urls]
+Homepage = "https://github.com/NicholasLeao/pdf-export-mcp"
+Repository = "https://github.com/NicholasLeao/pdf-export-mcp.git"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pdf_export_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/README.md",
+    "/pyproject.toml",
+]
