@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 """PDF Export MCP Server - Python implementation."""
 
-import asyncio
 import json
-import os
 import sys
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import mcp.server.stdio
-import mcp.types as types
-from mcp.server import NotificationOptions, Server
-from pydantic import AnyUrl
+from mcp.server.fastmcp import FastMCP
 from pyppeteer import launch
 import io
 
@@ -159,168 +154,74 @@ async def write_pdf_to_file(pdf_content: bytes, filename: str) -> str:
         raise
 
 
-# Create MCP server
-server = Server("pdf-export-mcp")
+# Create FastMCP server
+mcp = FastMCP("pdf-export-mcp")
 
 
-@server.list_tools()
-async def handle_list_tools() -> List[types.Tool]:
-    """List available tools."""
-    return [
-        types.Tool(
-            name="pdf_export",
-            description="Export HTML to PDF format and save to filesystem",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "html": {
-                        "type": "string",
-                        "description": "HTML content to render as PDF",
-                    },
-                    "css": {
-                        "type": "string",
-                        "description": "Optional CSS to apply to the HTML",
-                    },
-                    "filename": {
-                        "type": "string",
-                        "description": "Filename for the exported file (without extension)",
-                        "default": "output",
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Optional description of the file contents",
-                    },
-                    "options": {
-                        "type": "object",
-                        "description": "PDF generation options",
-                        "properties": {
-                            "format": {
-                                "type": "string",
-                                "enum": ["A4", "Letter", "Legal", "Tabloid"],
-                                "description": "Page format (default: A4)",
-                                "default": "A4",
-                            },
-                            "orientation": {
-                                "type": "string",
-                                "enum": ["portrait", "landscape"],
-                                "description": "Page orientation (default: portrait)",
-                                "default": "portrait",
-                            },
-                            "printBackground": {
-                                "type": "boolean",
-                                "description": "Print background graphics (default: true)",
-                                "default": True,
-                            },
-                            "margin": {
-                                "type": "object",
-                                "description": "Page margins",
-                                "properties": {
-                                    "top": {"type": "string", "default": "20mm"},
-                                    "right": {"type": "string", "default": "20mm"},
-                                    "bottom": {"type": "string", "default": "20mm"},
-                                    "left": {"type": "string", "default": "20mm"},
-                                },
-                            },
-                            "displayHeaderFooter": {
-                                "type": "boolean",
-                                "description": "Display header and footer (default: false)",
-                                "default": False,
-                            },
-                            "headerTemplate": {
-                                "type": "string",
-                                "description": "HTML template for the header",
-                            },
-                            "footerTemplate": {
-                                "type": "string",
-                                "description": "HTML template for the footer",
-                            },
-                        },
-                    },
-                },
-                "required": ["html"],
-            },
-        )
-    ]
-
-
-@server.call_tool()
-async def handle_call_tool(
-    name: str, arguments: Dict[str, Any]
-) -> List[types.TextContent]:
-    """Handle tool calls."""
-    if name == "pdf_export":
-        try:
-            html = arguments.get("html")
-            css = arguments.get("css")
-            filename = arguments.get("filename", "output")
-            description = arguments.get("description")
-            options = arguments.get("options", {})
-            
-            # Validate input
-            if not html or not isinstance(html, str):
-                raise ValueError("HTML content must be provided as a string")
-            
-            if html.strip() == "":
-                raise ValueError("HTML content cannot be empty")
-            
-            # Generate PDF
-            print("🔄 Generating PDF from HTML...", file=sys.stderr)
-            pdf_content = await generate_pdf(html, css, options)
-            
-            # Generate UUID and filename
-            file_uuid = str(uuid.uuid4())
-            sanitized_filename = "".join(c if c.isalnum() or c in "_-" else "_" for c in filename)
-            full_filename = f"{sanitized_filename}_{file_uuid}.pdf"
-            file_size = get_file_size_string(pdf_content)
-            
-            # Write PDF to file system
-            filepath = await write_pdf_to_file(pdf_content, full_filename)
-            
-            print(f"✅ PDF generated: {full_filename} ({file_size})", file=sys.stderr)
-            print(f"   Saved to: {filepath}", file=sys.stderr)
-            
-            # Return simplified response with essential information
-            result = {
-                "path": full_filename,
-                "filetype": "application/pdf",
-                "filename": full_filename,
-                "filesize": file_size,
-            }
-            
-            return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
-            
-        except Exception as error:
-            print(f"Error processing PDF export: {error}", file=sys.stderr)
-            
-            error_result = {
-                "success": False,
-                "error": str(error),
-            }
-            
-            return [types.TextContent(type="text", text=json.dumps(error_result, indent=2))]
+@mcp.tool()
+async def pdf_export(
+    html: str,
+    css: str = None,
+    filename: str = "output",
+    description: str = None,
+    options: Dict[str, Any] = None
+) -> dict:
+    """Export HTML to PDF format and save to filesystem.
     
-    raise ValueError(f"Unknown tool: {name}")
-
-
-async def main():
-    """Main server function."""
-    # Run the server using stdin/stdout streams
-    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-        print("PDF Export MCP Server running on stdio", file=sys.stderr)
-        await server.run(
-            read_stream,
-            write_stream,
-            NotificationOptions(
-                tools_changed=False,
-                resources_changed=False,
-                prompts_changed=False
-            ),
-        )
+    Args:
+        html: HTML content to render as PDF
+        css: Optional CSS to apply to the HTML
+        filename: Filename for the exported file (without extension)
+        description: Optional description of the file contents
+        options: PDF generation options including format, orientation, margins, etc.
+        
+    Returns:
+        Dictionary with export results including path and file info
+    """
+    try:
+        # Validate input
+        if not html or not isinstance(html, str):
+            raise ValueError("HTML content must be provided as a string")
+        
+        if html.strip() == "":
+            raise ValueError("HTML content cannot be empty")
+        
+        # Generate PDF
+        print("🔄 Generating PDF from HTML...", file=sys.stderr)
+        pdf_content = await generate_pdf(html, css, options or {})
+        
+        # Generate UUID and filename
+        file_uuid = str(uuid.uuid4())
+        sanitized_filename = "".join(c if c.isalnum() or c in "_-" else "_" for c in filename)
+        full_filename = f"{sanitized_filename}_{file_uuid}.pdf"
+        file_size = get_file_size_string(pdf_content)
+        
+        # Write PDF to file system
+        filepath = await write_pdf_to_file(pdf_content, full_filename)
+        
+        print(f"✅ PDF generated: {full_filename} ({file_size})", file=sys.stderr)
+        print(f"   Saved to: {filepath}", file=sys.stderr)
+        
+        # Return simplified response with essential information
+        return {
+            "path": full_filename,
+            "filetype": "application/pdf",
+            "filename": full_filename,
+            "filesize": file_size,
+        }
+        
+    except Exception as error:
+        print(f"Error processing PDF export: {error}", file=sys.stderr)
+        
+        return {
+            "success": False,
+            "error": str(error),
+        }
 
 
 def cli_main():
     """CLI entry point."""
-    asyncio.run(main())
+    mcp.run()
 
 
 if __name__ == "__main__":
