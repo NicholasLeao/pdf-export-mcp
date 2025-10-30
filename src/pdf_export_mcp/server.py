@@ -66,7 +66,16 @@ async def generate_pdf(
         print("🚀 Launching Pyppeteer browser...", file=sys.stderr)
         browser = await launch({
             'headless': True,
-            'args': ['--no-sandbox', '--disable-setuid-sandbox']
+            'executablePath': '/usr/bin/chromium',
+            'args': [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding'
+            ]
         })
         
         page = await browser.newPage()
