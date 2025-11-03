@@ -97,7 +97,7 @@ async def generate_pdf(
             }),
             'displayHeaderFooter': True,
             'headerTemplate': '',
-            'footerTemplate': '<div style="font-size: 12px; color: #666; text-align: right; width: 100%; margin: 0; padding-right: 20mm; font-family: Arial, Helvetica, sans-serif;">Powered by Protex AI</div>'
+            'footerTemplate': '<div style="font-size: 8px; color: #666; text-align: right; width: 100%; margin: 0; padding-right: 20mm; font-family: Arial, Helvetica, sans-serif;">This content has been generated using Protex Intelligence. The output is intended to assist but may not always be accurate or complete. Please verify important information before acting upon it.</div>'
         }
         
         # Allow custom header/footer if specified, but keep watermark
@@ -105,7 +105,7 @@ async def generate_pdf(
             pdf_options['headerTemplate'] = options.get('headerTemplate', '')
             custom_footer = options.get('footerTemplate', '')
             if custom_footer:
-                pdf_options['footerTemplate'] = f'{custom_footer}<div style="font-size: 12px; color: #666; text-align: right; width: 100%; margin: 5px 0 0; padding-right: 20mm; font-family: Arial, Helvetica, sans-serif;">Powered by Protex AI</div>'
+                pdf_options['footerTemplate'] = f'{custom_footer}<div style="font-size: 8px; color: #666; text-align: right; width: 100%; margin: 5px 0 0; padding-right: 20mm; font-family: Arial, Helvetica, sans-serif;">This content has been generated using Protex Intelligence. The output is intended to assist but may not always be accurate or complete. Please verify important information before acting upon it.</div>'
         
         # Generate PDF
         print("📄 Generating PDF...", file=sys.stderr)
