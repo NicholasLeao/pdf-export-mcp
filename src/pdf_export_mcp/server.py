@@ -66,7 +66,7 @@ async def generate_pdf(
         print("🚀 Launching Pyppeteer browser...", file=sys.stderr)
         browser = await launch({
             'headless': True,
-            'executablePath': '/usr/bin/chromium',
+            'executablePath': '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
             'args': [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -92,16 +92,20 @@ async def generate_pdf(
             'margin': options.get('margin', {
                 'top': '20mm',
                 'right': '20mm', 
-                'bottom': '20mm',
+                'bottom': '30mm',
                 'left': '20mm'
-            })
+            }),
+            'displayHeaderFooter': True,
+            'headerTemplate': '',
+            'footerTemplate': '<div style="font-size: 12px; color: #666; text-align: right; width: 100%; margin: 0; padding-right: 20mm; font-family: Arial, Helvetica, sans-serif;">Powered by Protex AI</div>'
         }
         
-        # Add header/footer if specified
+        # Allow custom header/footer if specified, but keep watermark
         if options.get('displayHeaderFooter'):
-            pdf_options['displayHeaderFooter'] = True
             pdf_options['headerTemplate'] = options.get('headerTemplate', '')
-            pdf_options['footerTemplate'] = options.get('footerTemplate', '')
+            custom_footer = options.get('footerTemplate', '')
+            if custom_footer:
+                pdf_options['footerTemplate'] = f'{custom_footer}<div style="font-size: 12px; color: #666; text-align: right; width: 100%; margin: 5px 0 0; padding-right: 20mm; font-family: Arial, Helvetica, sans-serif;">Powered by Protex AI</div>'
         
         # Generate PDF
         print("📄 Generating PDF...", file=sys.stderr)
