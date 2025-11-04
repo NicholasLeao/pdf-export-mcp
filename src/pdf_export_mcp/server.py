@@ -66,7 +66,7 @@ async def generate_pdf(
         print("🚀 Launching Pyppeteer browser...", file=sys.stderr)
         browser = await launch({
             'headless': True,
-            'executablePath': '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            'executablePath': '/usr/bin/chromium',
             'args': [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
